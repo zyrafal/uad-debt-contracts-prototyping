@@ -4,10 +4,13 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/introspection/ERC165.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "./interfaces/IDebtRedemption.sol";
+import "./interfaces/ICouponsForDollarsCalculator.sol";
+import "./interfaces/IDollarMintingCalculator.sol";
+import "./interfaces/IExcessDollarsDistributor.sol";
 import "./external/UniswapOracle.sol";
+import "./mocks/MockStabilitasToken.sol";
 import "./StabilitasConfig.sol";
 import "./DebtCoupon.sol";
 import "hardhat/console.sol";
@@ -20,6 +23,9 @@ contract DebtCouponManager is ERC165, IERC1155Receiver {
 
     StabilitasConfig public config;
 
+    //the amount of dollars we minted this cycle, so we can calculate delta. should be reset to 0 when cycle ends
+    uint256 public dollarsMintedThisCycle;
+
     /// @param _config the address of the config contract so we can fetch variables
     constructor(
         address _config
@@ -27,12 +33,12 @@ contract DebtCouponManager is ERC165, IERC1155Receiver {
         config = StabilitasConfig(_config);
     }
 
-    function getTwapPrice() internal returns(uint256) {
+    function getTwapPrice() internal view returns(uint256) {
         UniswapOracle oracle = UniswapOracle(config.twapOracleAddress());
         return oracle.consult(
-            config.stabilitasTokenAddress(),
-            1, //1 wei will get us the pool mid-price..?
-            config.comparisonToken()
+            config.comparisonTokenAddress(),
+            1000000,
+            config.stabilitasTokenAddress()
         );
     }
 
@@ -43,23 +49,25 @@ contract DebtCouponManager is ERC165, IERC1155Receiver {
         uint256 id,
         uint256 amount
     ) public returns (uint256) {
-        uint256 currentPrice = getTwapPrice();
+        uint256 twapPrice = getTwapPrice();
 
-        //TODO: price * decimals...
-        require(currentPrice > 1, "Price must be above 1 to redeem coupons");
+        require(twapPrice > 1000000, "Price must be above 1 to redeem coupons");
 
         DebtCoupon debtCoupon = DebtCoupon(config.debtCouponAddress());
+
         require(id > block.timestamp, "Coupon has expired");
         require(debtCoupon.balanceOf(msg.sender, id) >= amount, "User doesnt have enough coupons");
 
-        uint256 maxRedeemableCoupons = 5; //TODO: How do we calculate this?
+        mintClaimableDollars();
+
+        uint256 maxRedeemableCoupons = MockStabilitasToken(config.stabilitasTokenAddress()).balanceOf(address(this));
         uint256 couponsToRedeem = amount;
 
         if(amount > maxRedeemableCoupons) {
             couponsToRedeem = maxRedeemableCoupons;
         }
 
-        IERC20 stabilitas = IERC20(config.stabilitasTokenAddress());
+        MockStabilitasToken stabilitas = MockStabilitasToken(config.stabilitasTokenAddress());
         require(stabilitas.balanceOf(address(this)) > 0, "There aren't any stabilitas to redeem currently");
 
         debtCoupon.safeTransferFrom(
@@ -70,28 +78,71 @@ contract DebtCouponManager is ERC165, IERC1155Receiver {
             ''
         );
 
-        console.log("After transfer...", 1);
-
         debtCoupon.burnCoupons(address(this), amount, id);
 
-        //TODO: Give the man his dollars
+        stabilitas.transfer(msg.sender, amount);
 
-        return amount - couponsToRedeem;
+        return amount.sub(couponsToRedeem);
+    }
+
+    function mintClaimableDollars() public {
+        DebtCoupon debtCoupon = DebtCoupon(config.debtCouponAddress());
+        debtCoupon.updateTotalDebt();
+
+        uint256 twapPrice = getTwapPrice();
+        uint256 totalMintableDollars = IDollarMintingCalculator(config.dollarCalculatorAddress()).getDollarsToMint();
+        uint256 dollarsToMint = totalMintableDollars.sub(dollarsMintedThisCycle);
+
+        //update the dollars for this cycle
+        dollarsMintedThisCycle = totalMintableDollars;
+
+        //TODO: @Steve to call mint on stabilitas contract here. dollars should be minted to address(this)
+        console.log("Minting stabilitas to coupon manager: ", dollarsToMint);
+        MockStabilitasToken(config.stabilitasTokenAddress()).mint(address(this), dollarsToMint);
+
+        uint256 currentRedeemableBalance = MockStabilitasToken(config.stabilitasTokenAddress()).balanceOf(address(this));
+
+        if(currentRedeemableBalance > debtCoupon.getTotalOutstandingDebt()) {
+            uint256 excessDollars = currentRedeemableBalance.sub(debtCoupon.getTotalOutstandingDebt());
+
+            IExcessDollarsDistributor dollarsDistributor = IExcessDollarsDistributor(
+                config.getExcessDollarsDistributor(address(this))
+            );
+
+            dollarsDistributor.distributeDollars(excessDollars);
+        }
     }
 
     /// @param amount the amount of dollars to exchange for coupons
-    function exchangeDollarsForCoupons(uint256 amount) external {
-        uint256 currentPrice = getTwapPrice();
+    function exchangeDollarsForCoupons(uint256 amount) external returns(uint256) {
+        uint256 twapPrice = getTwapPrice();
 
-        //TODO: price * decimals...
-        require(currentPrice < 1, "Price must be above 1 to redeem coupons");
+        require(twapPrice < 1000000, "Price must be below 1 to mint coupons");
 
-        //TODO: how do we know max amount of coupons that are mintable?
-
-        //burn the stabilitas and provide user with coupons
         DebtCoupon debtCoupon = DebtCoupon(config.debtCouponAddress());
+        debtCoupon.updateTotalDebt();
+
+        //we are in a down cycle so reset the cycle counter
+        dollarsMintedThisCycle = 0;
+
+        ICouponsForDollarsCalculator couponCalculator = ICouponsForDollarsCalculator(config.couponCalculatorAddress());
+        uint256 couponsToMint = couponCalculator.getCouponAmount(amount);
+
+        //TODO: @Steve to call burn on stabilitas contract here
+        //console.log("Burning stabilitas: ", amount);
+        MockStabilitasToken(config.stabilitasTokenAddress()).burn(msg.sender, amount);
+
         uint256 expiryTimestamp = block.timestamp.add(config.couponLengthSeconds());
-        debtCoupon.mintCoupons(msg.sender, amount, expiryTimestamp);
+        debtCoupon.mintCoupons(msg.sender, couponsToMint, expiryTimestamp);
+
+        //give the caller timestamp of minted nft
+        return expiryTimestamp;
+    }
+
+    /// @param amount the amount of dollars to exchange for coupons
+    function getCouponsReturnedForDollars(uint256 amount) view external returns(uint256) {
+        ICouponsForDollarsCalculator couponCalculator = ICouponsForDollarsCalculator(config.couponCalculatorAddress());
+        return couponCalculator.getCouponAmount(amount);
     }
 
     function onERC1155Received(

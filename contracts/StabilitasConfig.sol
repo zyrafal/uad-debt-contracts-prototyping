@@ -4,6 +4,7 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
 
+//TODO: All setters in this class needs hasRole restrictions
 /// @title A central config for the stabilitas system. Also acts as a central access control manager.
 /// @notice For storing constants. For storing variables and allowing them to be changed by the admin (governance)
 /// @dev This should be used as a central access control manager which other contracts use to check permissions
@@ -14,8 +15,13 @@ contract StabilitasConfig is AccessControl {
     address public twapOracleAddress;
     address public debtCouponAddress;
     address public stabilitasTokenAddress;
-    address public comparisonToken; //USDC
+    address public comparisonTokenAddress; //USDC
+    address public couponCalculatorAddress;
+    address public dollarCalculatorAddress;
     uint256 public couponLengthSeconds;
+
+    //key = address of couponmanager, value = excessdollardistributor
+    mapping(address => address) excessDollarDistributors;
 
     constructor(address _admin) public {
         _setupRole(DEFAULT_ADMIN_ROLE, _admin);
@@ -41,8 +47,28 @@ contract StabilitasConfig is AccessControl {
         stabilitasTokenAddress = _stabilitasTokenAddress;
     }
 
-    function setComparisonToken(address _comparisonToken)
+    function setComparisonTokenAddress(address _comparisonTokenAddress)
     external {
-        comparisonToken = _comparisonToken;
+        comparisonTokenAddress = _comparisonTokenAddress;
+    }
+
+    function setCouponCalculatorAddress(address _couponCalculatorAddress)
+    external {
+        couponCalculatorAddress = _couponCalculatorAddress;
+    }
+
+    function setDollarCalculatorAddress(address _dollarCalculatorAddress)
+    external {
+        dollarCalculatorAddress = _dollarCalculatorAddress;
+    }
+
+    function getExcessDollarsDistributor(address debtCouponManagerAddress)
+    external view returns(address) {
+        return excessDollarDistributors[debtCouponManagerAddress];
+    }
+
+    function setExcessDollarsDistributor(address debtCouponManagerAddress, address excessCouponDistributor)
+    external {
+        excessDollarDistributors[debtCouponManagerAddress] = excessCouponDistributor;
     }
 }

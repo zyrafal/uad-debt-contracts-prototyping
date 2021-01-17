@@ -3,5 +3,5 @@ node_modules
 artifacts
 cache
 test
-scripts
+test/scripts
 contracts/WrappedDebt.sol
