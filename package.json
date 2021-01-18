@@ -21,6 +21,7 @@
     "@ethereum-waffle/chai": "^3.2.1",
     "@ethereum-waffle/mock-contract": "^3.2.1",
     "@ethereum-waffle/provider": "^3.2.1",
-    "@openzeppelin/contracts": "^3.3.0"
+    "@openzeppelin/contracts": "^3.3.0",
+    "solidity-linked-list": "4.0.0"
   }
 }

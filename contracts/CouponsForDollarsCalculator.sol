@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.6.2;
+pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
@@ -9,7 +9,7 @@ import "./StabilitasConfig.sol";
 import "./DebtCoupon.sol";
 import "hardhat/console.sol";
 
-/// @title A mock coupon calculator that always returns a constant
+/// @title Uses the following formula: (1 / (1 + R)^2) - 1
 contract CouponsForDollarsCalculator is ICouponsForDollarsCalculator {
     using SafeMath for uint256;
 

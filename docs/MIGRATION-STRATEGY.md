@@ -38,7 +38,7 @@ When we release the new DebtCouponManager, this calculator will not take into ac
 ```
 contract CouponsForDollarsCalculator is ICouponsForDollarsCalculator {
     function getCouponAmount(uint256 dollarsToBurn) external view override returns(uint256) {
-        uint256 totalDebt = DebtCoupon(oldDebtCouponAddress).totalOutstandingDebt().add(DebtCoupon(newDebtCouponAddress).totalOutstandingDebt());
+        uint256 totalDebt = DebtCoupon(oldDebtCouponAddress).totalOutstandingDebt().add(DebtCouponV2(newDebtCouponAddress).totalOutstandingDebt());
         uint256 r = totalDebt.div(IERC20(config.stabilitasTokenAddress()).totalSupply());
         uint256 onePlusRAllSquared = (r.add(1)).mul(r.add(1));
 

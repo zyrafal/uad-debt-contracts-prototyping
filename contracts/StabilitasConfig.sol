@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.6.2;
+pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
 
-//TODO: All setters in this class needs hasRole restrictions
 /// @title A central config for the stabilitas system. Also acts as a central access control manager.
 /// @notice For storing constants. For storing variables and allowing them to be changed by the admin (governance)
 /// @dev This should be used as a central access control manager which other contracts use to check permissions
@@ -18,7 +17,6 @@ contract StabilitasConfig is AccessControl {
     address public comparisonTokenAddress; //USDC
     address public couponCalculatorAddress;
     address public dollarCalculatorAddress;
-    uint256 public couponLengthSeconds;
 
     //key = address of couponmanager, value = excessdollardistributor
     mapping(address => address) excessDollarDistributors;
@@ -29,36 +27,37 @@ contract StabilitasConfig is AccessControl {
 
     function setTwapOracleAddress(address _twapOracleAddress)
     external {
+        require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "Caller is not admin");
         twapOracleAddress = _twapOracleAddress;
-    }
-
-    function setCouponLengthSeconds(uint256 _couponLengthSeconds)
-    external {
-        couponLengthSeconds = _couponLengthSeconds;
     }
 
     function setDebtCouponAddress(address _debtCouponAddress)
     external {
+        require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "Caller is not admin");
         debtCouponAddress = _debtCouponAddress;
     }
 
     function setStabilitasTokenAddress(address _stabilitasTokenAddress)
     external {
+        require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "Caller is not admin");
         stabilitasTokenAddress = _stabilitasTokenAddress;
     }
 
     function setComparisonTokenAddress(address _comparisonTokenAddress)
     external {
+        require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "Caller is not admin");
         comparisonTokenAddress = _comparisonTokenAddress;
     }
 
     function setCouponCalculatorAddress(address _couponCalculatorAddress)
     external {
+        require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "Caller is not admin");
         couponCalculatorAddress = _couponCalculatorAddress;
     }
 
     function setDollarCalculatorAddress(address _dollarCalculatorAddress)
     external {
+        require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "Caller is not admin");
         dollarCalculatorAddress = _dollarCalculatorAddress;
     }
 
@@ -69,6 +68,7 @@ contract StabilitasConfig is AccessControl {
 
     function setExcessDollarsDistributor(address debtCouponManagerAddress, address excessCouponDistributor)
     external {
+        require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "Caller is not admin");
         excessDollarDistributors[debtCouponManagerAddress] = excessCouponDistributor;
     }
 }

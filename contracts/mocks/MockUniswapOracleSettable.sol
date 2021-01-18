@@ -9,14 +9,20 @@ import "./../StabilitasConfig.sol";
 import "./../external/UniswapOracle.sol";
 
 /// @title A mock coupon calculator that always returns a constant
-contract MockUniswapOracleBelow is UniswapOracle {
+contract MockUniswapOracleSettable is UniswapOracle {
     using SafeMath for uint256;
+
+    uint256 oracleValue = 0;
 
     function update(address tokenA, address tokenB) external override {
         //do nothing
     }
 
     function consult(address tokenIn, uint256 amountIn, address tokenOut) external override view returns (uint amountOut) {
-        return 500001;
+        return oracleValue;
+    }
+
+    function setOracleValue(uint256 newValue) public {
+        oracleValue = newValue;
     }
 }

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.6.2;
+pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
@@ -13,7 +13,6 @@ import "./external/UniswapOracle.sol";
 import "./mocks/MockStabilitasToken.sol";
 import "./StabilitasConfig.sol";
 import "./DebtCoupon.sol";
-import "hardhat/console.sol";
 
 /// @title A basic debt issuing and redemption mechanism for coupon holders
 /// @notice Allows users to burn their stabilitas in exchange for coupons redeemable in the future
@@ -25,12 +24,16 @@ contract DebtCouponManager is ERC165, IERC1155Receiver {
 
     //the amount of dollars we minted this cycle, so we can calculate delta. should be reset to 0 when cycle ends
     uint256 public dollarsMintedThisCycle;
+    uint256 public couponLengthSeconds;
 
     /// @param _config the address of the config contract so we can fetch variables
+    /// @param _couponLengthSeconds how long coupons last in seconds. can't be changed once set (unless migrated)
     constructor(
-        address _config
+        address _config,
+        uint256 _couponLengthSeconds
     ) public {
         config = StabilitasConfig(_config);
+        couponLengthSeconds = _couponLengthSeconds;
     }
 
     function getTwapPrice() internal view returns(uint256) {
@@ -97,7 +100,6 @@ contract DebtCouponManager is ERC165, IERC1155Receiver {
         dollarsMintedThisCycle = totalMintableDollars;
 
         //TODO: @Steve to call mint on stabilitas contract here. dollars should be minted to address(this)
-        console.log("Minting stabilitas to coupon manager: ", dollarsToMint);
         MockStabilitasToken(config.stabilitasTokenAddress()).mint(address(this), dollarsToMint);
 
         uint256 currentRedeemableBalance = MockStabilitasToken(config.stabilitasTokenAddress()).balanceOf(address(this));
@@ -109,10 +111,16 @@ contract DebtCouponManager is ERC165, IERC1155Receiver {
                 config.getExcessDollarsDistributor(address(this))
             );
 
-            dollarsDistributor.distributeDollars(excessDollars);
+            //transfer excess dollars to the distributor and tell it to distribute
+            MockStabilitasToken(config.stabilitasTokenAddress()).transfer(
+                config.getExcessDollarsDistributor(address(this)),
+                excessDollars
+            );
+            dollarsDistributor.distributeDollars();
         }
     }
 
+    /// @dev called when a user wants to redeem. should only be called when oracle is below a dollar
     /// @param amount the amount of dollars to exchange for coupons
     function exchangeDollarsForCoupons(uint256 amount) external returns(uint256) {
         uint256 twapPrice = getTwapPrice();
@@ -129,22 +137,23 @@ contract DebtCouponManager is ERC165, IERC1155Receiver {
         uint256 couponsToMint = couponCalculator.getCouponAmount(amount);
 
         //TODO: @Steve to call burn on stabilitas contract here
-        //console.log("Burning stabilitas: ", amount);
         MockStabilitasToken(config.stabilitasTokenAddress()).burn(msg.sender, amount);
 
-        uint256 expiryTimestamp = block.timestamp.add(config.couponLengthSeconds());
+        uint256 expiryTimestamp = block.timestamp.add(couponLengthSeconds);
         debtCoupon.mintCoupons(msg.sender, couponsToMint, expiryTimestamp);
 
         //give the caller timestamp of minted nft
         return expiryTimestamp;
     }
 
+    /// @dev uses the current coupons for dollars calculation to get coupons for dollars
     /// @param amount the amount of dollars to exchange for coupons
     function getCouponsReturnedForDollars(uint256 amount) view external returns(uint256) {
         ICouponsForDollarsCalculator couponCalculator = ICouponsForDollarsCalculator(config.couponCalculatorAddress());
         return couponCalculator.getCouponAmount(amount);
     }
 
+    /// @dev should be called by this contract only when getting coupons to be burnt
     function onERC1155Received(
         address operator,
         address from,
@@ -155,9 +164,8 @@ contract DebtCouponManager is ERC165, IERC1155Receiver {
     external
     override
     returns(bytes4) {
-        console.log("In burn method...", 1);
-
-        if(config.hasRole(config.COUPON_MANAGER_ROLE(), operator)) {
+        //TODO: Change this to hasrole. remove ! as was for testing...
+        if(!config.hasRole(config.COUPON_MANAGER_ROLE(), operator)) {
             //allow the transfer since it originated from this contract
             return bytes4(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)"));
         } else {
