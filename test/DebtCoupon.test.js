@@ -35,59 +35,145 @@ describe("Debt coupon contract", function() {
   });
 
   describe("Deployment", function() {
-    it("Should set the right default admin role...", async function() {
-      //console.log(mockConfig.address);
-      //console.log(await deployedToken.DEFAULT_ADMIN_ROLE());
-      //console.log(await deployedToken.hasRole(mockConfig.address, mockConfig.address));
+    it("Should deploy correctly", async function() {
     });
   });
 
   describe("Transactions", function() {
-    /*
-        it("Should not allow non-owner address to mint tokens to a recipient", async function () {
-            const mintCouponCall = deployedToken.mintCoupons(
-                addr1.address,
-                50,
-                1000
-            );
+    it("Should allow a mint, and update total debt correctly", async function () {
+      const expiryTime = Math.round((Date.now() / 1000) + 86400);
 
-            await expect(mintCouponCall).to.be.revertedWith('Caller is not a coupon minter');
-        });
+      const amountToMint = 50;
 
-        it("Should not allow non-owner address to burn tokens", async function () {
-            const burnCouponCall = deployedToken.burnCoupons(
-                addr1.address,
-                50,
-                1000
-            );
+      //user should have 0 coupons to begin with. total debt should be 0
+      expect(await deployedToken.balanceOf(addr1.address, expiryTime)).to.equal(0);
+      expect(await deployedToken.getTotalOutstandingDebt()).to.equal(0);
 
-            await expect(burnCouponCall).to.be.revertedWith('Caller is not a coupon burner');
-        });
+      const mintCouponCall = deployedToken.mintCoupons(
+          addr1.address,
+          amountToMint,
+          expiryTime
+      );
 
-        it("Should allow the owner to mint tokens to a recipient", async function () {
-            await mockConfig.mock.couponLengthSeconds.returns(utils.parseEther('50'));
+      await mintCouponCall;
 
-            console.log(mockConfig.address);
-            console.log(await deployedToken.DEFAULT_ADMIN_ROLE());
-            console.log(await deployedToken.address);
+      //user should have amountToMint coupons to end. total debt should be amountToMint
+      expect(await deployedToken.balanceOf(addr1.address, expiryTime)).to.equal(amountToMint);
+      expect(await deployedToken.getTotalOutstandingDebt()).to.equal(amountToMint);
+    });
 
-            const expiryTimestamp = await deployedToken.mintCoupons(
-                addr1.address,
-                50,
-                1000
-            );
+    it("Should allow multiple mints, and update total debt correctly", async function () {
+      const expiryTime = Math.round((Date.now() / 1000) + 86400);
 
-            console.log(expiryTimestamp);
-            //console.log(await deployedToken.balanceOf(owner, '1'));
-        });
+      const amountToMint = 50;
 
-        it("Should allow multiple mints with the same expiry", async function () {
+      //user should have 0 coupons to begin with. total debt should be 0
+      expect(await deployedToken.balanceOf(addr1.address, expiryTime)).to.equal(0);
+      expect(await deployedToken.getTotalOutstandingDebt()).to.equal(0);
 
-        });
+      const mintCouponCall = deployedToken.mintCoupons(
+          addr1.address,
+          amountToMint,
+          expiryTime
+      );
 
-        it("Should allow burner to burn", async function () {
+      await mintCouponCall;
 
-        });
-        */
+      //user should have amountToMint coupons to end. total debt should be amountToMint
+      expect(await deployedToken.balanceOf(addr1.address, expiryTime)).to.equal(amountToMint);
+      expect(await deployedToken.getTotalOutstandingDebt()).to.equal(amountToMint);
+
+      const mintCouponCall2 = deployedToken.mintCoupons(
+          addr1.address,
+          amountToMint,
+          expiryTime
+      );
+
+      await mintCouponCall2;
+
+      //user should have amountToMint * 2 coupons to end. total debt should be amountToMint * 2
+      expect(await deployedToken.balanceOf(addr1.address, expiryTime)).to.equal(amountToMint * 2);
+      expect(await deployedToken.getTotalOutstandingDebt()).to.equal(amountToMint * 2);
+    });
+
+
+    it("Should allow multiple mints across different expiries and update total debt correctly", async function () {
+      const expiryTime = Math.round((Date.now() / 1000) + 86400);
+
+      const amountToMint = 50;
+      const amountToMint2 = 51;
+
+      //user should have 0 coupons to begin with. total debt should be 0
+      expect(await deployedToken.balanceOf(addr1.address, expiryTime)).to.equal(0);
+      expect(await deployedToken.getTotalOutstandingDebt()).to.equal(0);
+
+      const mintCouponCall = deployedToken.mintCoupons(
+          addr1.address,
+          amountToMint,
+          expiryTime
+      );
+
+      await mintCouponCall;
+
+      //user should have amountToMint coupons to end. total debt should be amountToMint
+      expect(await deployedToken.balanceOf(addr1.address, expiryTime)).to.equal(amountToMint);
+      expect(await deployedToken.getTotalOutstandingDebt()).to.equal(amountToMint);
+
+      const mintCouponCall2 = deployedToken.mintCoupons(
+          addr1.address,
+          amountToMint2,
+          expiryTime + 1
+      );
+
+      await mintCouponCall2;
+
+      //user should have amountToMint + amountToMint2 coupons to end. total debt should be amountToMint + amountToMint2
+      expect(await deployedToken.balanceOf(addr1.address, expiryTime)).to.equal(amountToMint);
+      expect(await deployedToken.balanceOf(addr1.address, expiryTime + 1)).to.equal(amountToMint2);
+      expect(await deployedToken.getTotalOutstandingDebt()).to.equal(amountToMint + amountToMint2);
+    });
+
+    it("Should allow a mint, and update total debt correctly", async function () {
+      const expiryTime = Math.round((Date.now() / 1000) + 86400);
+
+      const amountToMint = 50;
+      const amountToBurn = 20;
+
+      //user should have 0 coupons to begin with. total debt should be 0
+      expect(await deployedToken.balanceOf(addr1.address, expiryTime)).to.equal(0);
+      expect(await deployedToken.getTotalOutstandingDebt()).to.equal(0);
+
+      const mintCouponCall = deployedToken.mintCoupons(
+          addr1.address,
+          amountToMint,
+          expiryTime
+      );
+
+      await mintCouponCall;
+
+      //user should have amountToMint coupons to end. total debt should be amountToMint
+      expect(await deployedToken.balanceOf(addr1.address, expiryTime)).to.equal(amountToMint);
+      expect(await deployedToken.getTotalOutstandingDebt()).to.equal(amountToMint);
+
+      const burnCouponCall = deployedToken.burnCoupons(
+          addr1.address,
+          amountToBurn,
+          expiryTime
+      );
+
+      await burnCouponCall;
+
+      //user should have amountToMint - amountToBurn coupons to end. total debt should be amountToMint
+      expect(await deployedToken.balanceOf(addr1.address, expiryTime)).to.equal(amountToMint - amountToBurn);
+      expect(await deployedToken.getTotalOutstandingDebt()).to.equal(amountToMint - amountToBurn);
+    });
+
+    //todo
+    it("Should restrict access to elevated methods", async function () {
+      //mintCoupons();
+      //burnCoupons();
+      //setRedemptionContractAddress();
+      //await expect(burnCouponCall).to.be.revertedWith('Caller is not a coupon burner');
+    });
   });
 });

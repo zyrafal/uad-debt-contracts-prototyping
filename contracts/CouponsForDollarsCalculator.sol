@@ -23,11 +23,12 @@ contract CouponsForDollarsCalculator is ICouponsForDollarsCalculator {
     }
 
     function getCouponAmount(uint256 dollarsToBurn) external view override returns(uint256) {
+        uint256 ONE = 1;
         uint256 totalDebt = DebtCoupon(config.debtCouponAddress()).getTotalOutstandingDebt();
         uint256 r = totalDebt.div(IERC20(config.stabilitasTokenAddress()).totalSupply());
-        uint256 oneMinusRAllSquared = ((1).sub(r)).mul((1).sub(r));
+        uint256 oneMinusRAllSquared = ((ONE).sub(r)).mul((ONE).sub(r));
 
         //rewards per dollar is ( (1/(1-R)^2) - 1)
-        return ((dollarsToBurn).div(oneMinusRAllSquared)).sub(1);
+        return ((dollarsToBurn).div(oneMinusRAllSquared)).sub(ONE);
     }
 }

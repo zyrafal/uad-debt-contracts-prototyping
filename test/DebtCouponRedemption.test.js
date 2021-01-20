@@ -1,5 +1,9 @@
 //TODO: If more than is currently redeemable is sent, then send the remainder back...
 //TODO: If multiple coupons are sent redeem greedily by earliest expiry and send remainder back
+
+
+//TODO: Tests...
+/*
 const { ethers } = require("hardhat"); //to be explicit
 const { use, expect } = require("chai");
 
@@ -94,3 +98,4 @@ describe("DebtCoupon Redemption Contract", function() {
     });
   });
 });
+*/
