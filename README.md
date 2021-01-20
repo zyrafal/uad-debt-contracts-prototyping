@@ -13,3 +13,4 @@ TODO (Steve):
 - Assuming you can change comparisonToken, change the 1000000 values so that regardless of what token is used it will work i.e. USDC has 6 decimals which is an exception - default is 18.
 - Replace MockStabilitasToken with the real dollar token once its built
 - Go to ExcessDollarsDistributor and replace the 3 addresses with the right addresses. These should really be pulled from config
+- Wrapped debt token needs to be built. I wrote some example code of what i think the interface should look like.

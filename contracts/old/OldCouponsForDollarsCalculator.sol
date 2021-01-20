@@ -4,13 +4,13 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "./interfaces/ICouponsForDollarsCalculator.sol";
-import "./StabilitasConfig.sol";
-import "./DebtCoupon.sol";
+import "./../interfaces/ICouponsForDollarsCalculator.sol";
+import "./../StabilitasConfig.sol";
+import "./../DebtCoupon.sol";
 import "hardhat/console.sol";
 
-/// @title Uses the following formula: ((1/(1-R)^2) - 1)
-contract CouponsForDollarsCalculator is ICouponsForDollarsCalculator {
+/// @title Uses the following formula: (1 / (1 + R)^2) - 1
+contract OldCouponsForDollarsCalculator is ICouponsForDollarsCalculator {
     using SafeMath for uint256;
 
     StabilitasConfig public config;
@@ -25,9 +25,9 @@ contract CouponsForDollarsCalculator is ICouponsForDollarsCalculator {
     function getCouponAmount(uint256 dollarsToBurn) external view override returns(uint256) {
         uint256 totalDebt = DebtCoupon(config.debtCouponAddress()).getTotalOutstandingDebt();
         uint256 r = totalDebt.div(IERC20(config.stabilitasTokenAddress()).totalSupply());
-        uint256 oneMinusRAllSquared = ((1).sub(r)).mul((1).sub(r));
+        uint256 onePlusRAllSquared = (r.add(1)).mul(r.add(1));
 
-        //rewards per dollar is ( (1/(1-R)^2) - 1)
-        return ((dollarsToBurn).div(oneMinusRAllSquared)).sub(1);
+        //rewards per dollar is (1 / (1 + R)^2) - 1
+        return ((dollarsToBurn).div(onePlusRAllSquared)).sub(1);
     }
 }
