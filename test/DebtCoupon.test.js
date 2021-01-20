@@ -1,49 +1,49 @@
 const { ethers } = require("hardhat"); //to be explicit
 const { use, expect } = require("chai");
-const { utils } = require('ethers');
+const { utils } = require("ethers");
 
-const {MockProvider} = require('@ethereum-waffle/provider');
-const {waffleChai} = require('@ethereum-waffle/chai');
-const {deployMockContract} = require('@ethereum-waffle/mock-contract');
+const { MockProvider } = require("@ethereum-waffle/provider");
+const { waffleChai } = require("@ethereum-waffle/chai");
+const { deployMockContract } = require("@ethereum-waffle/mock-contract");
 
-const CONFIG = require('../artifacts/contracts/StabilitasConfig.sol/StabilitasConfig.json');
+const CONFIG = require("../artifacts/contracts/StabilitasConfig.sol/StabilitasConfig.json");
 
 use(waffleChai);
 
-describe("Debt coupon contract", function () {
-    let DebtCoupon;
-    let deployedToken;
-    let mockConfig;
-    let owner;
-    let addr1;
-    let addr2;
-    let addrs;
+describe("Debt coupon contract", function() {
+  let DebtCoupon;
+  let deployedToken;
+  let mockConfig;
+  let owner;
+  let addr1;
+  let addr2;
+  let addrs;
 
-    async function setupMocks() {
-        const [sender, receiver] = new MockProvider().getWallets();
-        mockConfig = await deployMockContract(sender, CONFIG.abi);
-    }
+  async function setupMocks() {
+    const [sender, receiver] = new MockProvider().getWallets();
+    mockConfig = await deployMockContract(sender, CONFIG.abi);
+  }
 
-    beforeEach(async function () {
-        DebtCoupon = await ethers.getContractFactory("DebtCoupon");
-        [owner, addr1, addr2, ...addrs] = await ethers.getSigners();
+  beforeEach(async function() {
+    DebtCoupon = await ethers.getContractFactory("DebtCoupon");
+    [owner, addr1, addr2, ...addrs] = await ethers.getSigners();
 
-        await setupMocks();
+    await setupMocks();
 
-        deployedToken = await DebtCoupon.deploy(mockConfig.address);
-        await deployedToken.deployed();
+    deployedToken = await DebtCoupon.deploy(mockConfig.address);
+    await deployedToken.deployed();
+  });
+
+  describe("Deployment", function() {
+    it("Should set the right default admin role...", async function() {
+      //console.log(mockConfig.address);
+      //console.log(await deployedToken.DEFAULT_ADMIN_ROLE());
+      //console.log(await deployedToken.hasRole(mockConfig.address, mockConfig.address));
     });
+  });
 
-    describe("Deployment", function () {
-        it("Should set the right default admin role...", async function () {
-            //console.log(mockConfig.address);
-            //console.log(await deployedToken.DEFAULT_ADMIN_ROLE());
-            //console.log(await deployedToken.hasRole(mockConfig.address, mockConfig.address));
-        });
-    });
-
-    describe("Transactions", function () {
-        /*
+  describe("Transactions", function() {
+    /*
         it("Should not allow non-owner address to mint tokens to a recipient", async function () {
             const mintCouponCall = deployedToken.mintCoupons(
                 addr1.address,
@@ -89,5 +89,5 @@ describe("Debt coupon contract", function () {
 
         });
         */
-    });
+  });
 });
