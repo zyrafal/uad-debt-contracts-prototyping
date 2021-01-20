@@ -1,11 +1,11 @@
 const { ethers, ContractFactory } = require("ethers"); //to be explicit
-const configArtifact = require("../artifacts/contracts/StabilitasConfig.sol/StabilitasConfig.json");
+const configArtifact = require("../artifacts/contracts/DollarConfig.sol/DollarConfig.json");
 const debtCouponArtifact = require("../artifacts/contracts/DebtCoupon.sol/DebtCoupon.json");
 const debtCouponManager = require("../artifacts/contracts/DebtCouponManager.sol/DebtCouponManager.json");
 const oracleAbove = require("../artifacts/contracts/mocks/MockUniswapOracleAbove.sol/MockUniswapOracleAbove.json");
 const oracleBelow = require("../artifacts/contracts/mocks/MockUniswapOracleBelow.sol/MockUniswapOracleBelow.json");
 const oracleSettable = require("../artifacts/contracts/mocks/MockUniswapOracleSettable.sol/MockUniswapOracleSettable.json");
-const stabilitasToken = require("../artifacts/contracts/mocks/MockStabilitasToken.sol/MockStabilitasToken.json");
+const dollarToken = require("../artifacts/contracts/mocks/MockDollarToken.sol/MockDollarToken.json");
 const couponCalculator = require("../artifacts/contracts/CouponsForDollarsCalculator.sol/CouponsForDollarsCalculator.json");
 const mockCouponCalculator = require("../artifacts/contracts/mocks/MockCouponsForDollarsCalculator.sol/MockCouponsForDollarsCalculator.json");
 const mockDollarCalculator = require("../artifacts/contracts/mocks/MockDollarMintingCalculator.sol/MockDollarMintingCalculator.json");
@@ -16,7 +16,7 @@ let configDeployed,
   debtCouponManagerDeployed,
   oracleAboveDeployed,
   oracleBelowDeployed,
-  stabilitasTokenDeployed,
+  dollarTokenDeployed,
   couponCalculatorDeployed,
   mockCouponCalculatorDeployed,
   mockDollarCalculatorDeployed,
@@ -28,12 +28,12 @@ let owner = new ethers.Wallet(
 ).connect(new ethers.providers.JsonRpcProvider("http://localhost:8545"));
 
 async function deployConfig(adminAddress) {
-  const StabilitasConfig = new ContractFactory(
+  const DollarConfig = new ContractFactory(
     configArtifact.abi,
     configArtifact.bytecode,
     owner
   );
-  configDeployed = await StabilitasConfig.deploy(adminAddress);
+  configDeployed = await DollarConfig.deploy(adminAddress);
   await configDeployed.deployed();
   return configDeployed.address;
 }
@@ -96,15 +96,15 @@ async function deployOracleSettable() {
   return oracleSettableDeployed.address;
 }
 
-async function deployStabilitasToken(initialSupply) {
-  const MockStabilitasToken = new ContractFactory(
-    stabilitasToken.abi,
-    stabilitasToken.bytecode,
+async function deployDollarToken(initialSupply) {
+  const MockDollarToken = new ContractFactory(
+    dollarToken.abi,
+    dollarToken.bytecode,
     owner
   );
-  stabilitasTokenDeployed = await MockStabilitasToken.deploy(initialSupply);
-  await stabilitasTokenDeployed.deployed();
-  return stabilitasTokenDeployed.address;
+  dollarTokenDeployed = await MockDollarToken.deploy(initialSupply);
+  await dollarTokenDeployed.deployed();
+  return dollarTokenDeployed.address;
 }
 
 async function deployCouponCalculator(configAddress) {
@@ -166,7 +166,7 @@ async function doDeployment() {
   const oracleAbove = await deployOracleAbove();
   const oracleBelow = await deployOracleBelow();
   const oracleSettable = await deployOracleSettable();
-  const stabilitasToken = await deployStabilitasToken("1000");
+  const dollarToken = await deployDollarToken("1000");
   //const couponCalculator = await deployCouponCalculator(configAddress);
   //const dollarCalculator = await deployMockDollarMintingCalculator(configAddress);
 
@@ -186,7 +186,7 @@ async function doDeployment() {
 
   await configDeployed.setTwapOracleAddress(oracleAbove);
   await configDeployed.setDebtCouponAddress(couponAddress);
-  await configDeployed.setStabilitasTokenAddress(stabilitasToken);
+  await configDeployed.setDollarTokenAddress(dollarToken);
 
   //set to coupon, this is never used since we're using mocks
   await configDeployed.setComparisonTokenAddress(couponAddress);
@@ -204,7 +204,7 @@ async function doDeployment() {
     oracleAbove,
     oracleBelow,
     oracleSettable,
-    stabilitasToken,
+    dollarToken,
     couponCalculator,
     dollarCalculator,
     dollarDistributor
@@ -214,7 +214,7 @@ async function doDeployment() {
 async function getAllContractSettings() {
   const twapOracleAddress = await configDeployed.twapOracleAddress();
   const debtCouponAddress = await configDeployed.debtCouponAddress();
-  const stabilitasTokenAddress = await configDeployed.stabilitasTokenAddress();
+  const dollarTokenAddress = await configDeployed.dollarTokenAddress();
   const comparisonTokenAddress = await configDeployed.comparisonTokenAddress();
   const couponCalculatorAddress = await configDeployed.couponCalculatorAddress();
   const dollarCalculatorAddress = await configDeployed.dollarCalculatorAddress();
@@ -222,7 +222,7 @@ async function getAllContractSettings() {
   return {
     twapOracleAddress,
     debtCouponAddress,
-    stabilitasTokenAddress,
+    dollarTokenAddress,
     comparisonTokenAddress,
     couponCalculatorAddress,
     dollarCalculatorAddress

@@ -8,7 +8,7 @@ const { waffleChai } = require("@ethereum-waffle/chai");
 const { deployMockContract } = require("@ethereum-waffle/mock-contract");
 
 const IERC20 = require("../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json");
-const CONFIG = require("../artifacts/contracts/StabilitasConfig.sol/StabilitasConfig.json");
+const CONFIG = require("../artifacts/contracts/DollarConfig.sol/DollarConfig.json");
 
 use(waffleChai);
 

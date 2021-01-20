@@ -6,7 +6,7 @@ const { MockProvider } = require("@ethereum-waffle/provider");
 const { waffleChai } = require("@ethereum-waffle/chai");
 const { deployMockContract } = require("@ethereum-waffle/mock-contract");
 
-const CONFIG = require("../artifacts/contracts/StabilitasConfig.sol/StabilitasConfig.json");
+const CONFIG = require("../artifacts/contracts/DollarConfig.sol/DollarConfig.json");
 
 use(waffleChai);
 

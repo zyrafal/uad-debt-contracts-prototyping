@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "solidity-linked-list/contracts/StructuredLinkedList.sol";
-import "./StabilitasConfig.sol";
+import "./DollarConfig.sol";
 
 /// @title A coupon redeemable for dollars with an expiry time
 /// @notice An ERC1155 where the token ID is the expiry time
@@ -15,7 +15,7 @@ contract DebtCoupon is ERC1155 {
     using SafeMath for uint256;
     using StructuredLinkedList for StructuredLinkedList.List;
 
-    StabilitasConfig public config;
+    DollarConfig public config;
 
     address public redemptionContractAddress = address(0);
     bool redemptionContractSet = false;
@@ -27,8 +27,8 @@ contract DebtCoupon is ERC1155 {
     //@dev URI param is if we want to add an off-chain meta data uri associated with this contract
     constructor(
         address _config
-    ) public ERC1155("URI") {
-        config = StabilitasConfig(_config);
+    ) ERC1155("URI") { // FIXME: can this be blank or do we need to figure some URI
+        config = DollarConfig(_config);
         totalOutstandingDebt = 0;
     }
 

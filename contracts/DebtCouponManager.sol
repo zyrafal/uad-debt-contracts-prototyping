@@ -10,17 +10,17 @@ import "./interfaces/ICouponsForDollarsCalculator.sol";
 import "./interfaces/IDollarMintingCalculator.sol";
 import "./interfaces/IExcessDollarsDistributor.sol";
 import "./external/UniswapOracle.sol";
-import "./mocks/MockStabilitasToken.sol";
-import "./StabilitasConfig.sol";
+import "./mocks/MockDollarToken.sol";
+import "./DollarConfig.sol";
 import "./DebtCoupon.sol";
 
 /// @title A basic debt issuing and redemption mechanism for coupon holders
-/// @notice Allows users to burn their stabilitas in exchange for coupons redeemable in the future
+/// @notice Allows users to burn their dollar in exchange for coupons redeemable in the future
 /// @notice Allows users to redeem individual debt coupons or batch redeem coupons on a first-come first-serve basis
 contract DebtCouponManager is ERC165, IERC1155Receiver {
     using SafeMath for uint256;
 
-    StabilitasConfig public config;
+    DollarConfig public config;
 
     //the amount of dollars we minted this cycle, so we can calculate delta. should be reset to 0 when cycle ends
     uint256 public dollarsMintedThisCycle;
@@ -31,8 +31,8 @@ contract DebtCouponManager is ERC165, IERC1155Receiver {
     constructor(
         address _config,
         uint256 _couponLengthSeconds
-    ) public {
-        config = StabilitasConfig(_config);
+    ) {
+        config = DollarConfig(_config);
         couponLengthSeconds = _couponLengthSeconds;
     }
 
@@ -41,7 +41,7 @@ contract DebtCouponManager is ERC165, IERC1155Receiver {
         return oracle.consult(
             config.comparisonTokenAddress(),
             1000000,
-            config.stabilitasTokenAddress()
+            config.dollarTokenAddress()
         );
     }
 
@@ -63,15 +63,15 @@ contract DebtCouponManager is ERC165, IERC1155Receiver {
 
         mintClaimableDollars();
 
-        uint256 maxRedeemableCoupons = MockStabilitasToken(config.stabilitasTokenAddress()).balanceOf(address(this));
+        uint256 maxRedeemableCoupons = MockDollarToken(config.dollarTokenAddress()).balanceOf(address(this));
         uint256 couponsToRedeem = amount;
 
         if(amount > maxRedeemableCoupons) {
             couponsToRedeem = maxRedeemableCoupons;
         }
 
-        MockStabilitasToken stabilitas = MockStabilitasToken(config.stabilitasTokenAddress());
-        require(stabilitas.balanceOf(address(this)) > 0, "There aren't any stabilitas to redeem currently");
+        MockDollarToken dollar = MockDollarToken(config.dollarTokenAddress());
+        require(dollar.balanceOf(address(this)) > 0, "There aren't any dollar to redeem currently");
 
         debtCoupon.safeTransferFrom(
             msg.sender,
@@ -83,7 +83,7 @@ contract DebtCouponManager is ERC165, IERC1155Receiver {
 
         debtCoupon.burnCoupons(address(this), amount, id);
 
-        stabilitas.transfer(msg.sender, amount);
+        dollar.transfer(msg.sender, amount);
 
         return amount.sub(couponsToRedeem);
     }
@@ -92,17 +92,17 @@ contract DebtCouponManager is ERC165, IERC1155Receiver {
         DebtCoupon debtCoupon = DebtCoupon(config.debtCouponAddress());
         debtCoupon.updateTotalDebt();
 
-        uint256 twapPrice = getTwapPrice();
+        // uint256 twapPrice = getTwapPrice();
         uint256 totalMintableDollars = IDollarMintingCalculator(config.dollarCalculatorAddress()).getDollarsToMint();
         uint256 dollarsToMint = totalMintableDollars.sub(dollarsMintedThisCycle);
 
         //update the dollars for this cycle
         dollarsMintedThisCycle = totalMintableDollars;
 
-        //TODO: @Steve to call mint on stabilitas contract here. dollars should be minted to address(this)
-        MockStabilitasToken(config.stabilitasTokenAddress()).mint(address(this), dollarsToMint);
+        //TODO: @Steve to call mint on dollar contract here. dollars should be minted to address(this)
+        MockDollarToken(config.dollarTokenAddress()).mint(address(this), dollarsToMint);
 
-        uint256 currentRedeemableBalance = MockStabilitasToken(config.stabilitasTokenAddress()).balanceOf(address(this));
+        uint256 currentRedeemableBalance = MockDollarToken(config.dollarTokenAddress()).balanceOf(address(this));
 
         if(currentRedeemableBalance > debtCoupon.getTotalOutstandingDebt()) {
             uint256 excessDollars = currentRedeemableBalance.sub(debtCoupon.getTotalOutstandingDebt());
@@ -112,7 +112,7 @@ contract DebtCouponManager is ERC165, IERC1155Receiver {
             );
 
             //transfer excess dollars to the distributor and tell it to distribute
-            MockStabilitasToken(config.stabilitasTokenAddress()).transfer(
+            MockDollarToken(config.dollarTokenAddress()).transfer(
                 config.getExcessDollarsDistributor(address(this)),
                 excessDollars
             );
@@ -136,8 +136,8 @@ contract DebtCouponManager is ERC165, IERC1155Receiver {
         ICouponsForDollarsCalculator couponCalculator = ICouponsForDollarsCalculator(config.couponCalculatorAddress());
         uint256 couponsToMint = couponCalculator.getCouponAmount(amount);
 
-        //TODO: @Steve to call burn on stabilitas contract here
-        MockStabilitasToken(config.stabilitasTokenAddress()).burn(msg.sender, amount);
+        //TODO: @Steve to call burn on dollar contract here
+        MockDollarToken(config.dollarTokenAddress()).burn(msg.sender, amount);
 
         uint256 expiryTimestamp = block.timestamp.add(couponLengthSeconds);
         debtCoupon.mintCoupons(msg.sender, couponsToMint, expiryTimestamp);

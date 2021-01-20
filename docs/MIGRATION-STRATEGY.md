@@ -4,8 +4,8 @@ If at any point we want to change the coupon expiry time, we must follow the fol
 
 1. Create new debt coupon (v2)
 2. Create new debt redemption contract married to coupon v2
-3. Give the new debt redemption contract access to mint stabilitas token using StabilitasConfig
-4. Create a new IExcessDollarsDistributor which distributes 100% of stabilitas to new redemption contract. Since both contracts are unaware of eachothers state, this excess from v1 may not actually be excess i.e. there will probably be v2 coupons in circulation. By forwarding them to the second redemption contract, they are available for redemption. If they are truly excess, the v2 contract can distribute these using its own ExcessDollarsDistributor. By using this forwarding mechanism, we avoid any dollars being misclassified as excess and unfairly distributed.
+3. Give the new debt redemption contract access to mint dollar token using DollarConfig
+4. Create a new IExcessDollarsDistributor which distributes 100% of dollar to new redemption contract. Since both contracts are unaware of eachothers state, this excess from v1 may not actually be excess i.e. there will probably be v2 coupons in circulation. By forwarding them to the second redemption contract, they are available for redemption. If they are truly excess, the v2 contract can distribute these using its own ExcessDollarsDistributor. By using this forwarding mechanism, we avoid any dollars being misclassified as excess and unfairly distributed.
 5. Call couponMintingEnabled(false) on the old contract so it can't mint any more coupons.
 6. On the frontend, check coupon address before routing to correct redemption contract. You can call redemptionContractAddress() on the coupon itself to get the address.
 7. Redirect any old burnCoupon calls on the frontend to the new contract as burns should only occur on the new contract. Remove burn access from the old contract.
@@ -25,7 +25,7 @@ However, in the migration period, if totalDebt() is used in the system, we must 
 contract CouponsForDollarsCalculator is ICouponsForDollarsCalculator {
     function getCouponAmount(uint256 dollarsToBurn) external view override returns(uint256) {
         uint256 totalDebt = DebtCoupon(debtCouponAddress).totalOutstandingDebt();
-        uint256 r = totalDebt.div(IERC20(config.stabilitasTokenAddress()).totalSupply());
+        uint256 r = totalDebt.div(IERC20(config.dollarTokenAddress()).totalSupply());
         uint256 onePlusRAllSquared = (r.add(1)).mul(r.add(1));
 
         //rewards per dollar is (1 / (1 + R)^2) - 1
@@ -39,7 +39,7 @@ When we release the new DebtCouponManager, this calculator will not take into ac
 contract CouponsForDollarsCalculator is ICouponsForDollarsCalculator {
     function getCouponAmount(uint256 dollarsToBurn) external view override returns(uint256) {
         uint256 totalDebt = DebtCoupon(oldDebtCouponAddress).totalOutstandingDebt().add(DebtCouponV2(newDebtCouponAddress).totalOutstandingDebt());
-        uint256 r = totalDebt.div(IERC20(config.stabilitasTokenAddress()).totalSupply());
+        uint256 r = totalDebt.div(IERC20(config.dollarTokenAddress()).totalSupply());
         uint256 onePlusRAllSquared = (r.add(1)).mul(r.add(1));
 
         //rewards per dollar is (1 / (1 + R)^2) - 1

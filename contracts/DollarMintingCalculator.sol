@@ -3,7 +3,7 @@ pragma solidity ^0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "./StabilitasConfig.sol";
+import "./DollarConfig.sol";
 import "./interfaces/IDollarMintingCalculator.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./external/UniswapOracle.sol";
@@ -12,13 +12,13 @@ import "./external/UniswapOracle.sol";
 contract DollarMintingCalculator is IDollarMintingCalculator {
     using SafeMath for uint256;
 
-    StabilitasConfig public config;
+    DollarConfig public config;
 
     /// @param _config the address of the config contract so we can fetch variables
     constructor(
         address _config
     ) public {
-        config = StabilitasConfig(_config);
+        config = DollarConfig(_config);
     }
 
     function getDollarsToMint() external view override returns(uint256) {
@@ -26,8 +26,8 @@ contract DollarMintingCalculator is IDollarMintingCalculator {
         uint256 twapPrice = oracle.consult(
             config.comparisonTokenAddress(),
             1000000,
-            config.stabilitasTokenAddress()
+            config.dollarTokenAddress()
         );
-        return twapPrice.sub(1000000).mul(IERC20(config.stabilitasTokenAddress()).totalSupply());
+        return twapPrice.sub(1000000).mul(IERC20(config.dollarTokenAddress()).totalSupply());
     }
 }

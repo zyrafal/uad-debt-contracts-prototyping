@@ -5,7 +5,7 @@ pragma experimental ABIEncoderV2;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./../interfaces/ICouponsForDollarsCalculator.sol";
-import "./../StabilitasConfig.sol";
+import "./../DollarConfig.sol";
 import "./../external/UniswapOracle.sol";
 
 /// @title A mock coupon calculator that always returns a constant

@@ -1,5 +1,5 @@
 const { ethers } = require("hardhat"); //to be explicit
-const configABI = require("../artifacts/contracts/StabilitasConfig.sol/StabilitasConfig.json")
+const configABI = require("../artifacts/contracts/DollarConfig.sol/DollarConfig.json")
   .abi;
 const oracleABI = require("../artifacts/contracts/mocks/MockUniswapOracleAbove.sol/MockUniswapOracleAbove.json")
   .abi;

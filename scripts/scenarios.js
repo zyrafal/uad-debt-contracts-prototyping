@@ -1,5 +1,5 @@
 const { ethers, BigNumber } = require("ethers"); //to be explicit
-const configABI = require("../artifacts/contracts/StabilitasConfig.sol/StabilitasConfig.json")
+const configABI = require("../artifacts/contracts/DollarConfig.sol/DollarConfig.json")
   .abi;
 const couponABI = require("../artifacts/contracts/DebtCoupon.sol/DebtCoupon.json")
   .abi;
@@ -140,7 +140,7 @@ async function runPriceBelowADollarScenario() {
     );
 
     //get the user's balance
-    await getBalanceAndSupply(owner, addresses.stabilitasToken);
+    await getBalanceAndSupply(owner, addresses.dollarToken);
 
     //get the amount of coupon's that should be returned
     await getCouponsReturnedForDollars(owner);
@@ -149,7 +149,7 @@ async function runPriceBelowADollarScenario() {
     await burnDollarsForCoupons(owner, "10");
 
     //get the user's balance
-    await getBalanceAndSupply(owner, addresses.stabilitasToken);
+    await getBalanceAndSupply(owner, addresses.dollarToken);
   } catch (err) {
     console.log(err);
   }

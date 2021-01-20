@@ -4,16 +4,16 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
 
-/// @title A central config for the stabilitas system. Also acts as a central access control manager.
+/// @title A central config for the dollar system. Also acts as a central access control manager.
 /// @notice For storing constants. For storing variables and allowing them to be changed by the admin (governance)
 /// @dev This should be used as a central access control manager which other contracts use to check permissions
-contract StabilitasConfig is AccessControl {
+contract DollarConfig is AccessControl {
 
     bytes32 public constant COUPON_MANAGER_ROLE = keccak256("COUPON_MANAGER");
 
     address public twapOracleAddress;
     address public debtCouponAddress;
-    address public stabilitasTokenAddress;
+    address public dollarTokenAddress;
     address public comparisonTokenAddress; //USDC
     address public couponCalculatorAddress;
     address public dollarCalculatorAddress;
@@ -37,10 +37,10 @@ contract StabilitasConfig is AccessControl {
         debtCouponAddress = _debtCouponAddress;
     }
 
-    function setStabilitasTokenAddress(address _stabilitasTokenAddress)
+    function setDollarTokenAddress(address _dollarTokenAddress)
     external {
         require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "Caller is not admin");
-        stabilitasTokenAddress = _stabilitasTokenAddress;
+        dollarTokenAddress = _dollarTokenAddress;
     }
 
     function setComparisonTokenAddress(address _comparisonTokenAddress)
