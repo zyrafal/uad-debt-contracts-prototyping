@@ -52,6 +52,9 @@ contract DebtCouponManager is ERC165, IERC1155Receiver {
         uint256 id,
         uint256 amount
     ) public returns (uint256) {
+        UniswapOracle oracle = UniswapOracle(config.twapOracleAddress());
+        oracle.update(config.stabilitasTokenAddress(), config.comparisonTokenAddress());
+
         uint256 twapPrice = getTwapPrice();
 
         require(twapPrice > 1000000, "Price must be above 1 to redeem coupons");
@@ -61,7 +64,7 @@ contract DebtCouponManager is ERC165, IERC1155Receiver {
         require(id > block.timestamp, "Coupon has expired");
         require(debtCoupon.balanceOf(msg.sender, id) >= amount, "User doesnt have enough coupons");
 
-        mintClaimableDollars();
+        _mintClaimableDollars();
 
         uint256 maxRedeemableCoupons = MockStabilitasToken(config.stabilitasTokenAddress()).balanceOf(address(this));
         uint256 couponsToRedeem = amount;
@@ -88,7 +91,13 @@ contract DebtCouponManager is ERC165, IERC1155Receiver {
         return amount.sub(couponsToRedeem);
     }
 
-    function mintClaimableDollars() public {
+    function mintClaimableDollars() external {
+        UniswapOracle oracle = UniswapOracle(config.twapOracleAddress());
+        oracle.update(config.stabilitasTokenAddress(), config.comparisonTokenAddress());
+        _mintClaimableDollars();
+    }
+
+    function _mintClaimableDollars() internal {
         DebtCoupon debtCoupon = DebtCoupon(config.debtCouponAddress());
         debtCoupon.updateTotalDebt();
 
@@ -123,6 +132,9 @@ contract DebtCouponManager is ERC165, IERC1155Receiver {
     /// @dev called when a user wants to redeem. should only be called when oracle is below a dollar
     /// @param amount the amount of dollars to exchange for coupons
     function exchangeDollarsForCoupons(uint256 amount) external returns(uint256) {
+        UniswapOracle oracle = UniswapOracle(config.twapOracleAddress());
+        oracle.update(config.stabilitasTokenAddress(), config.comparisonTokenAddress());
+
         uint256 twapPrice = getTwapPrice();
 
         require(twapPrice < 1000000, "Price must be below 1 to mint coupons");

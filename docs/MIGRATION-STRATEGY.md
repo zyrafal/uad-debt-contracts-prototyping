@@ -4,11 +4,12 @@ If at any point we want to change the coupon expiry time, we must follow the fol
 
 1. Create new debt coupon (v2)
 2. Create new debt redemption contract married to coupon v2
-3. Give the new debt redemption contract access to mint stabilitas token using StabilitasConfig
-4. Create a new IExcessDollarsDistributor which distributes 100% of stabilitas to new redemption contract. Since both contracts are unaware of eachothers state, this excess from v1 may not actually be excess i.e. there will probably be v2 coupons in circulation. By forwarding them to the second redemption contract, they are available for redemption. If they are truly excess, the v2 contract can distribute these using its own ExcessDollarsDistributor. By using this forwarding mechanism, we avoid any dollars being misclassified as excess and unfairly distributed.
-5. Call couponMintingEnabled(false) on the old contract so it can't mint any more coupons.
-6. On the frontend, check coupon address before routing to correct redemption contract. You can call redemptionContractAddress() on the coupon itself to get the address.
-7. Redirect any old burnCoupon calls on the frontend to the new contract as burns should only occur on the new contract. Remove burn access from the old contract.
+3. Give the new debt redemption contract access to mint and burn stabilitas token using StabilitasConfig. do this by calling:`grantRole(COUPON_MANAGER_ROLE(), newCouponManagerAddress);`
+4. Call `setRedemptionContractAddress()` with the address of the coupon redemption contract. This helps users/frontend know where to redeem the new coupon.
+5. Create a new IExcessDollarsDistributor which distributes 100% of stabilitas to new redemption contract. Since both contracts are unaware of eachothers state, this excess from v1 may not actually be excess i.e. there will probably be v2 coupons in circulation. By forwarding them to the second redemption contract, they are available for redemption. If they are truly excess, the v2 contract can distribute these using its own ExcessDollarsDistributor. By using this forwarding mechanism, we avoid any dollars being misclassified as excess and unfairly distributed.
+6. Call couponMintingEnabled(false) on the old contract so it can't mint any more coupons.
+7. On the frontend, check coupon address before routing to correct redemption contract. You can call redemptionContractAddress() on the coupon itself to get the address.
+8. Redirect any old burnCoupon calls on the frontend to the new contract as burns should only occur on the new contract. Remove burn access from the old contract.
 
 Note: Since totalOutstandingDebt() is kept track of in the DebtCoupon contract, when we switch Coupon contract, each coupon will only keep track of its own balance. This means for some period of time:
 ```

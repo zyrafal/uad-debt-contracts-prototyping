@@ -1,9 +1,3 @@
-//TODO: If more than is currently redeemable is sent, then send the remainder back...
-//TODO: If multiple coupons are sent redeem greedily by earliest expiry and send remainder back
-
-
-//TODO: Tests...
-/*
 const { ethers } = require("hardhat"); //to be explicit
 const { use, expect } = require("chai");
 
@@ -35,20 +29,15 @@ describe("DebtCoupon Redemption Contract", function() {
 
   beforeEach(async function() {
     const { sender, receiver, mockERC20, mockCONFIG } = await setupMocks();
-    //await mockERC20.mock.balanceOf.returns(''utils.parseEther('999999')'');
     await mockCONFIG.mock.couponLengthSeconds.returns(50);
 
     DebtCoupon = await ethers.getContractFactory("DebtCoupon");
-    DebtCouponRedemption = await ethers.getContractFactory(
-      "DebtCouponRedemption"
-    );
+    DebtCouponRedemption = await ethers.getContractFactory("DebtCouponRedemption");
 
     [owner, addr1, addr2, ...addrs] = await ethers.getSigners();
 
     deployedDebtCoupon = await DebtCoupon.deploy(mockCONFIG.address);
-    deployedRedemptionContract = await DebtCouponRedemption.deploy(
-      mockCONFIG.address
-    );
+    deployedRedemptionContract = await DebtCouponRedemption.deploy(mockCONFIG.address);
 
     await Promise.all([
       deployedDebtCoupon.deployed(),
@@ -98,4 +87,3 @@ describe("DebtCoupon Redemption Contract", function() {
     });
   });
 });
-*/

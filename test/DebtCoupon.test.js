@@ -41,6 +41,9 @@ describe("Debt coupon contract", function() {
 
   describe("Transactions", function() {
     it("Should allow a mint, and update total debt correctly", async function () {
+      //mock the coupon manager role
+      await mockConfig.mock.hasRole.returns(true);
+
       const expiryTime = Math.round((Date.now() / 1000) + 86400);
 
       const amountToMint = 50;
@@ -63,6 +66,9 @@ describe("Debt coupon contract", function() {
     });
 
     it("Should allow multiple mints, and update total debt correctly", async function () {
+      //mock the coupon manager role
+      await mockConfig.mock.hasRole.returns(true);
+
       const expiryTime = Math.round((Date.now() / 1000) + 86400);
 
       const amountToMint = 50;
@@ -98,6 +104,9 @@ describe("Debt coupon contract", function() {
 
 
     it("Should allow multiple mints across different expiries and update total debt correctly", async function () {
+      //mock the coupon manager role
+      await mockConfig.mock.hasRole.returns(true);
+
       const expiryTime = Math.round((Date.now() / 1000) + 86400);
 
       const amountToMint = 50;
@@ -134,6 +143,9 @@ describe("Debt coupon contract", function() {
     });
 
     it("Should allow a mint, and update total debt correctly", async function () {
+      //mock the coupon manager role
+      await mockConfig.mock.hasRole.returns(true);
+
       const expiryTime = Math.round((Date.now() / 1000) + 86400);
 
       const amountToMint = 50;
@@ -168,12 +180,31 @@ describe("Debt coupon contract", function() {
       expect(await deployedToken.getTotalOutstandingDebt()).to.equal(amountToMint - amountToBurn);
     });
 
-    //todo
     it("Should restrict access to elevated methods", async function () {
-      //mintCoupons();
-      //burnCoupons();
-      //setRedemptionContractAddress();
-      //await expect(burnCouponCall).to.be.revertedWith('Caller is not a coupon burner');
+      //mock the coupon manager role
+      await mockConfig.mock.hasRole.returns(false);
+
+      const burnCouponCall = deployedToken.burnCoupons(
+          addr1.address,
+          '1',
+          Math.round((Date.now() / 1000) + 86400).toString()
+      );
+
+      await expect(burnCouponCall).to.be.revertedWith('Caller is not a coupon manager');
+
+      const mintCouponCall = deployedToken.mintCoupons(
+          addr1.address,
+          '1',
+          Math.round((Date.now() / 1000) + 86400).toString()
+      );
+
+      await expect(mintCouponCall).to.be.revertedWith('Caller is not a coupon manager');
+
+      const setRedemptionContractAddress = deployedToken.mintCoupons(
+          addr1.address
+      );
+
+      await expect(setRedemptionContractAddress).to.be.revertedWith('Caller is not an admin');
     });
   });
 });

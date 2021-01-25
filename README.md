@@ -8,6 +8,7 @@ This package covers the Debt ERC1155 coupons which are issued by the system and 
 
 TODO:
 - Auto replace contractAddresses on deploy.
+- flag to stop old coupon manager minting coupons when new one is activated
 
 TODO (Steve):
 - Assuming you can change comparisonToken, change the 1000000 values so that regardless of what token is used it will work i.e. USDC has 6 decimals which is an exception - default is 18.

@@ -179,6 +179,8 @@ async function doDeployment() {
   );
   const dollarDistributor = await deployMockExcessDollarDistributor();
 
+  await configDeployed.grantRole(await configDeployed.COUPON_MANAGER_ROLE(), couponManagerAddress);
+
   //set the coupon redemption address to the coupon manager
   await debtCouponDeployed.setRedemptionContractAddress(couponManagerAddress);
 

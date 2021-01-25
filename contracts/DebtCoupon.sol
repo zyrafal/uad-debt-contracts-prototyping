@@ -40,7 +40,7 @@ contract DebtCoupon is ERC1155 {
         uint256 amount,
         uint256 expiryTimestamp
     ) public {
-        //require(hasRole(config.COUPON_MANAGER_ROLE(), msg.sender), "Caller is not a coupon manager");
+        require(config.hasRole(config.COUPON_MANAGER_ROLE(), msg.sender), "Caller is not a coupon manager");
         _mint(recipient, expiryTimestamp, amount, "");
         emit MintedCoupons(recipient, expiryTimestamp, amount);
 
@@ -61,7 +61,7 @@ contract DebtCoupon is ERC1155 {
         uint256 amount,
         uint256 expiryTimestamp
     ) public {
-        //require(hasRole(config.COUPON_MANAGER_ROLE(), msg.sender), "Caller is not a coupon manager");
+        require(config.hasRole(config.COUPON_MANAGER_ROLE(), msg.sender), "Caller is not a coupon manager");
         require(balanceOf(couponOwner, expiryTimestamp) >= amount, "Coupon owner doesn't have enough coupons");
         _burn(couponOwner, expiryTimestamp, amount);
         emit BurnedCoupons(couponOwner, expiryTimestamp, amount);
@@ -112,7 +112,7 @@ contract DebtCoupon is ERC1155 {
 
     /// @notice This can only be done once, and should be done post-deployment!
     function setRedemptionContractAddress(address newAddress) external {
-        //require(config.hasRole(config.COUPON_MANAGER_ROLE(), msg.sender), "Caller is not a coupon manager");
+        require(config.hasRole(config.DEFAULT_ADMIN_ROLE(), msg.sender), "Caller is not an admin");
         require(!redemptionContractSet, "Redemption contract has already been set");
         redemptionContractSet = true;
         redemptionContractAddress = newAddress;
