@@ -87,20 +87,15 @@ contract DebtCouponManager is ERC165, IERC1155Receiver {
 
 
     /// @dev Mint tokens to auto redeem pool.
-    /// @return Amount of tokens minted to auto redeem pool
-    /// @return Amount of remaining debt in the auto redeem pool
-    function autoRedeemCoupons() public returns (uint256, uint256) {
+    function autoRedeemCoupons() public {
 
         // Check whether TWAP > 1.
         uint256 twapPrice = getTwapPrice();
         require(twapPrice > 1000000, "Price must be above 1 to redeem coupons");
 
-        uint256 debtToPay = debtToPayWithAutoRedeem;
-        // TODO: update mintClaimableDollars to account for auto redeem logic
-        mintClaimableDollars(); // updates debtToPayWithAutoRedeem
-        uint256 tokensMintedToRedeemPool = debtToPay - debtToPayWithAutoRedeem;
+        mintClaimableDollars();
 
-        return (tokensMintedToRedeemPool, debtToPayWithAutoRedeem);
+        // TODO: reward msg.sender for calling this function. Determine reward logic.
     }
 
     /// @param id the timestamp of the coupon
@@ -151,7 +146,7 @@ contract DebtCouponManager is ERC165, IERC1155Receiver {
         DebtCoupon debtCoupon = DebtCoupon(config.debtCouponAddress());
         debtCoupon.updateTotalDebt();
 
-        uint256 twapPrice = getTwapPrice();
+        uint256 twapPrice = getTwapPrice(); //unused variable. Why here?
         uint256 totalMintableDollars = IDollarMintingCalculator(config.dollarCalculatorAddress()).getDollarsToMint();
         uint256 dollarsToMint = totalMintableDollars.sub(dollarsMintedThisCycle);
 
@@ -161,10 +156,14 @@ contract DebtCouponManager is ERC165, IERC1155Receiver {
         //TODO: @Steve to call mint on stabilitas contract here. dollars should be minted to address(this)
         MockStabilitasToken(config.stabilitasTokenAddress()).mint(address(this), dollarsToMint);
 
-        uint256 currentRedeemableBalance = MockStabilitasToken(config.stabilitasTokenAddress()).balanceOf(address(this));
+        MockStabilitasToken stabilitas = MockStabilitasToken(config.stabilitasTokenAddress());
+        MockAutoRedeemToken autoRedeemToken = MockAutoRedeemToken(config.autoRedeemPoolTokenAddress());
 
-        if(currentRedeemableBalance > debtCoupon.getTotalOutstandingDebt()) {
-            uint256 excessDollars = currentRedeemableBalance.sub(debtCoupon.getTotalOutstandingDebt());
+        uint256 currentRedeemableBalance = stabilitas.balanceOf(address(this));
+        uint256 totalOutstandingDebt = debtCoupon.getTotalOutstandingDebt() + autoRedeemToken.totalSupply();
+
+        if(currentRedeemableBalance > totalOutstandingDebt) {
+            uint256 excessDollars = currentRedeemableBalance.sub(totalOutstandingDebt);
 
             IExcessDollarsDistributor dollarsDistributor = IExcessDollarsDistributor(
                 config.getExcessDollarsDistributor(address(this))
