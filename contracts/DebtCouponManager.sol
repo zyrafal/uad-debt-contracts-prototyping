@@ -95,15 +95,12 @@ contract DebtCouponManager is ERC165, IERC1155Receiver {
         uint256 twapPrice = getTwapPrice();
         require(twapPrice > 1000000, "Price must be above 1 to redeem coupons");
 
+        uint256 debtToPay = debtToPayWithAutoRedeem;
         // TODO: update mintClaimableDollars to account for auto redeem logic
-        mintClaimableDollars();
+        mintClaimableDollars(); // updates debtToPayWithAutoRedeem
+        uint256 tokensMintedToRedeemPool = debtToPay - debtToPayWithAutoRedeem;
 
-        uint256 maxRedeemableCoupons = MockStabilitasToken(config.stabilitasTokenAddress()).balanceOf(address(this));
-        uint256 amountToMintToRedeemPool = debtToPayWithAutoRedeem;
-
-        if(debtToPayWithAutoRedeem > maxRedeemableCoupons) {
-            amountToMintToRedeemPool = maxRedeemableCoupons;
-        }
+        return (tokensMintedToRedeemPool, debtToPayWithAutoRedeem);
     }
 
     /// @param id the timestamp of the coupon
