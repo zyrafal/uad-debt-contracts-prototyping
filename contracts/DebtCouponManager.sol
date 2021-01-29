@@ -27,9 +27,6 @@ contract DebtCouponManager is ERC165, IERC1155Receiver {
     uint256 public dollarsMintedThisCycle;
     uint256 public couponLengthSeconds;
 
-    // the amount of tokens to mint to the auto redeem pool. should be updated every auto redeem call
-    uint256 public debtToPayWithAutoRedeem;
-
     /// @param _config the address of the config contract so we can fetch variables
     /// @param _couponLengthSeconds how long coupons last in seconds. can't be changed once set (unless migrated)
     constructor(
@@ -79,10 +76,31 @@ contract DebtCouponManager is ERC165, IERC1155Receiver {
         autoRedeemToken.mint(address(this), amount);
         autoRedeemToken.transfer(msg.sender, amount);
 
-        // Update how much debt to mint uAD tokens (to auto redeem pool) for.
-        debtToPayWithAutoRedeem += amount;
-
         return autoRedeemToken.balanceOf(msg.sender);
+    }
+
+
+    /// @dev Exchange auto redeem pool tokens (i.e. LP tokens) for uAD tokens.
+    /// @param amount Amount of LP tokens to burn in exchange for uAD tokens.
+    /// @return msg.sender's remaining balance of LP tokens.
+    function burnAutoRedeemTokensForDollars(
+        uint256 amount
+    ) public returns (uint) {
+
+        MockAutoRedeemToken autoRedeemToken = MockAutoRedeemToken(config.autoRedeemPoolTokenAddress());
+        require(autoRedeemToken.balanceOf(msg.sender) >= amount, "User doesn't have enough auto redeem pool tokens.");
+
+        MockStabilitasToken stabilitas = MockStabilitasToken(config.stabilitasTokenAddress());
+        require(stabilitas.balanceOf(address(this)) > 0, "There aren't any stabilitas to redeem currently");
+
+        // Elementary LP shares calculation. Can be updated for more complex / tailored math.
+        uint256 totalBalanceOfPool = stabilitas.balanceOf(address(this));
+        uint256 amountToRedeem = totalBalanceOfPool.mul(amount.div(autoRedeemToken.totalSupply()));
+
+        autoRedeemToken.burn(msg.sender, amount);
+        stabilitas.transfer(msg.sender, amountToRedeem);
+
+        return(autoRedeemToken.balanceOf(msg.sender));
     }
 
 
