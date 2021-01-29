@@ -11,6 +11,7 @@ import "./interfaces/IDollarMintingCalculator.sol";
 import "./interfaces/IExcessDollarsDistributor.sol";
 import "./external/UniswapOracle.sol";
 import "./mocks/MockStabilitasToken.sol";
+import "./mocks/MockAutoRedeemToken.sol";
 import "./StabilitasConfig.sol";
 import "./DebtCoupon.sol";
 
@@ -25,6 +26,9 @@ contract DebtCouponManager is ERC165, IERC1155Receiver {
     //the amount of dollars we minted this cycle, so we can calculate delta. should be reset to 0 when cycle ends
     uint256 public dollarsMintedThisCycle;
     uint256 public couponLengthSeconds;
+
+    // the amount of tokens to mint to the auto redeem pool. should be updated every auto redeem call
+    uint256 public debtToPayWithAutoRedeem;
 
     /// @param _config the address of the config contract so we can fetch variables
     /// @param _couponLengthSeconds how long coupons last in seconds. can't be changed once set (unless migrated)
@@ -43,6 +47,42 @@ contract DebtCouponManager is ERC165, IERC1155Receiver {
             1000000,
             config.stabilitasTokenAddress()
         );
+    }
+
+    /// @dev Lets debt holder burn coupons for auto redemption. Doesn't make TWAP > 1 check.
+    /// @param id the timestamp of the coupon
+    /// @param amount the amount of coupons to redeem
+    /// @return amount of auto redeem pool tokens (i.e. LP tokens) minted to debt holder
+    function autoRedeemCoupons(
+        uint id,
+        uint256 amount
+    ) public returns (uint256) {
+
+        // Check whether debt coupon hasn't expired --> Burn debt coupons.
+        DebtCoupon debtCoupon = DebtCoupon(config.debtCouponAddress());
+
+        require(id > block.timestamp, "Coupon has expired");
+        require(debtCoupon.balanceOf(msg.sender, id) >= amount, "User doesnt have enough coupons");
+
+        debtCoupon.safeTransferFrom(
+            msg.sender,
+            address(this),
+            id,
+            amount,
+            ''
+        );
+
+        debtCoupon.burnCoupons(address(this), amount, id);
+
+        // Mint LP tokens to this contract. Transfer LP tokens to msg.sender i.e. debt holder
+        MockAutoRedeemToken autoRedeemToken = MockAutoRedeemToken(config.autoRedeemPoolTokenAddress());
+        autoRedeemToken.mint(address(this), amount);
+        autoRedeemToken.transfer(msg.sender, amount);
+
+        // Update how much debt to mint uAD tokens (to auto redeem pool) for.
+        debtToPayWithAutoRedeem += amount;
+
+        return autoRedeemToken.balanceOf(msg.sender);
     }
 
     /// @param id the timestamp of the coupon

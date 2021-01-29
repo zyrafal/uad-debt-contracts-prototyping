@@ -13,6 +13,7 @@ contract StabilitasConfig is AccessControl {
 
     address public twapOracleAddress;
     address public debtCouponAddress;
+    address public autoRedeemPoolTokenAddress;
     address public stabilitasTokenAddress;
     address public comparisonTokenAddress; //USDC
     address public couponCalculatorAddress;
