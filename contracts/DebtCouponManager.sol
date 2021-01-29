@@ -131,13 +131,13 @@ contract DebtCouponManager is ERC165, IERC1155Receiver {
             msg.sender,
             address(this),
             id,
-            amount,
+            couponsToRedeem,
             ''
         );
 
-        debtCoupon.burnCoupons(address(this), amount, id);
+        debtCoupon.burnCoupons(address(this), couponsToRedeem, id);
 
-        stabilitas.transfer(msg.sender, amount);
+        stabilitas.transfer(msg.sender, couponsToRedeem);
 
         return amount.sub(couponsToRedeem);
     }
