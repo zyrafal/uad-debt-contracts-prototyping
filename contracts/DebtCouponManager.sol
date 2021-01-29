@@ -53,7 +53,7 @@ contract DebtCouponManager is ERC165, IERC1155Receiver {
     /// @param id the timestamp of the coupon
     /// @param amount the amount of coupons to redeem
     /// @return amount of auto redeem pool tokens (i.e. LP tokens) minted to debt holder
-    function autoRedeemCoupons(
+    function burnCouponsForAutoRedemption(
         uint id,
         uint256 amount
     ) public returns (uint256) {
@@ -85,6 +85,27 @@ contract DebtCouponManager is ERC165, IERC1155Receiver {
         return autoRedeemToken.balanceOf(msg.sender);
     }
 
+
+    /// @dev Mint tokens to auto redeem pool.
+    /// @return Amount of tokens minted to auto redeem pool
+    /// @return Amount of remaining debt in the auto redeem pool
+    function autoRedeemCoupons() public returns (uint256, uint256) {
+
+        // Check whether TWAP > 1.
+        uint256 twapPrice = getTwapPrice();
+        require(twapPrice > 1000000, "Price must be above 1 to redeem coupons");
+
+        // TODO: update mintClaimableDollars to account for auto redeem logic
+        mintClaimableDollars();
+
+        uint256 maxRedeemableCoupons = MockStabilitasToken(config.stabilitasTokenAddress()).balanceOf(address(this));
+        uint256 amountToMintToRedeemPool = debtToPayWithAutoRedeem;
+
+        if(debtToPayWithAutoRedeem > maxRedeemableCoupons) {
+            amountToMintToRedeemPool = maxRedeemableCoupons;
+        }
+    }
+
     /// @param id the timestamp of the coupon
     /// @param amount the amount of coupons to redeem
     /// @return amount of unredeemed coupons
@@ -112,7 +133,8 @@ contract DebtCouponManager is ERC165, IERC1155Receiver {
 
         MockStabilitasToken stabilitas = MockStabilitasToken(config.stabilitasTokenAddress());
         require(stabilitas.balanceOf(address(this)) > 0, "There aren't any stabilitas to redeem currently");
-
+        
+        // BUG(?): replace `amount` with couponsToRedeem
         debtCoupon.safeTransferFrom(
             msg.sender,
             address(this),
